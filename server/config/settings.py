@@ -6,15 +6,20 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+import dj_database_url # <-- NEW IMPORT
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load .env from server/ folder
+# Load .env from server/ folder (Only works locally, Render uses Environment Variables)
 load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback-dev-key")
 DEBUG = os.getenv("DEBUG", "False") == "True"
+
+# Fix ALLOWED_HOSTS (Render will pass a single string, not a comma-separated list)
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+if not ALLOWED_HOSTS or ALLOWED_HOSTS == [""]:
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".onrender.com"]
 
 
 INSTALLED_APPS = [
@@ -37,13 +42,13 @@ INSTALLED_APPS = [
     "notifications",
 ]
 
-# CRITICAL — must be set before first migrate
 AUTH_USER_MODEL = "accounts.User"
 
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "corsheaders.middleware.CorsMiddleware",          # above CommonMiddleware
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # <-- NEW: Serve static files in production
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -72,17 +77,24 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 
-# PostgreSQL
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+# --- DATABASE CONFIGURATION ---
+# If DATABASE_URL exists (on Render), use it. 
+# Otherwise, use local .env variables (on your PC).
+if os.getenv("DATABASE_URL"):
+    DATABASES = {
+        "default": dj_database_url.config(conn_max_age=600, ssl_require=True)
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME", "ems_db"),
+            "USER": os.getenv("DB_USER", "postgres"),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
+            "HOST": os.getenv("DB_HOST", "localhost"),
+            "PORT": os.getenv("DB_PORT", "5433"),
+        }
+    }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -99,7 +111,11 @@ USE_I18N = True
 USE_TZ = True
 
 
+# --- STATIC FILES CONFIGURATION (For Render) ---
 STATIC_URL = "static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles") # <-- NEW
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage" # <-- NEW
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Media (profile images)
@@ -108,6 +124,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # CORS
 CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+if not CORS_ALLOWED_ORIGINS or CORS_ALLOWED_ORIGINS == [""]:
+    CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS # <-- NEW: Needed for Django admin to work on Render
 
 # Django REST Framework
 REST_FRAMEWORK = {
