@@ -1,55 +1,75 @@
-import React, { useEffect, useState } from 'react'
-import { dummyProfileData } from '../assets/assets'
-import Loading from '../components/Loading'
-import { Lock } from 'lucide-react'
-import ProfileForm from '../components/ProfileForm'
-import ChangePasswordModal from '../components/ChangePasswordModal'
+import React, { useEffect, useState } from "react";
+import { Lock } from "lucide-react";
+import toast from "react-hot-toast";
+import Loading from "../components/Loading";
+import ProfileForm from "../components/ProfileForm";
+import ChangePasswordModal from "../components/ChangePasswordModal";
+import { getProfile } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const Settings = () => {
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const { refreshUser } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const fetchProfile = async () => {
-    setProfile(dummyProfileData)
-    setTimeout(() => {
+    try {
+      const data = await getProfile();
+      setProfile(data);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to load profile");
+    } finally {
       setLoading(false);
-    },1000);
-  }
+    }
+  };
 
   useEffect(() => {
-    fetchProfile()
-  },[])
+    fetchProfile();
+  }, []);
 
-  if(loading) return <Loading />
+  const handleProfileSaved = async () => {
+    await fetchProfile();
+    await refreshUser(); // update sidebar name
+  };
+
+  if (loading) return <Loading />;
+  if (!profile) return <p className="text-center text-slate-500 py-12">Failed to load profile</p>;
 
   return (
-    <div className='aniamte-fade-in'>
-      <div className='page-header'>
-        <h1 className='page-title'>Settings</h1>
-        <p className='page-subtitle'>Manage your account and preferences</p>
+    <div className="animate-fade-in">
+      <div className="page-header">
+        <h1 className="page-title">Settings</h1>
+        <p className="page-subtitle">Manage your account and preferences</p>
       </div>
 
-      {profile && <ProfileForm initialData={profile} onSuccess={fetchProfile}/>}
+      <ProfileForm initialData={profile} onSuccess={handleProfileSaved} />
 
-      {/* Change password trigger */}
-      <div className='card max-w-md p-6 flex items-center justify-between'>
-        <div className='flex items-center gap-3'>
-          <div className='p-2.5 bg-slate-100 rounded-lg'>
-            <Lock className='w-5 h-5 text-slate-600'/>
+      <div className="card max-w-md p-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-slate-100 rounded-lg">
+            <Lock className="w-5 h-5 text-slate-600" />
           </div>
           <div>
-            <p className='font-medium text-slate-900'>Password</p>
-            <p className='text-sm text-slate-500'>Update your account password</p>
+            <p className="font-medium text-slate-900">Password</p>
+            <p className="text-sm text-slate-500">
+              Update your account password
+            </p>
           </div>
         </div>
-        <button onClick={() => setShowPasswordModal(true)} className='btn-secondary text-sm'>
+        <button
+          onClick={() => setShowPasswordModal(true)}
+          className="btn-secondary text-sm"
+        >
           Change
         </button>
       </div>
-      <ChangePasswordModal open={showPasswordModal} onClose={() => setShowPasswordModal(false)}/>
+      <ChangePasswordModal
+        open={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+      />
     </div>
-  )
-}
+  );
+};
 
-export default Settings
+export default Settings;
