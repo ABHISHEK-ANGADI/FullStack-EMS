@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from rest_framework import viewsets, status
 from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
@@ -9,18 +7,15 @@ from .serializers import PayslipSerializer, PayslipCreateSerializer
 from notifications.utils import notify
 from notifications.models import Notification
 
-
 def _get_employee_or_none(user):
     try:
         return user.employee
     except Exception:
         return None
 
-
 class IsAdmin(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role == "ADMIN"
-
 
 class PayslipViewSet(viewsets.ModelViewSet):
     serializer_class = PayslipSerializer
@@ -38,7 +33,6 @@ class PayslipViewSet(viewsets.ModelViewSet):
                 return Payslip.objects.none()
             qs = qs.filter(employee=emp)
 
-        # filters
         employee_param = self.request.query_params.get("employee")
         month_param = self.request.query_params.get("month")
         year_param = self.request.query_params.get("year")
@@ -56,22 +50,13 @@ class PayslipViewSet(viewsets.ModelViewSet):
                 {"detail": "Only admins can generate payslips."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+            
         serializer = PayslipCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         emp = data["employee"]
 
-        notify(
-            user=emp.user,
-            type=Notification.TYPE_PAYSLIP_GENERATED,
-            title="New Payslip Available",
-            message=(
-                f"Your payslip for {payslip.month}/{payslip.year} is ready. "
-                f"Net salary: ${payslip.net_salary}."
-            ),
-            link="/payslips",
-        )
-
+        # 1. Create the Payslip FIRST
         payslip = Payslip.objects.create(
             employee=emp,
             month=data["month"],
@@ -83,6 +68,23 @@ class PayslipViewSet(viewsets.ModelViewSet):
             generated_by=request.user,
             notes=data.get("notes", ""),
         )
+
+        # 2. Send the Notification SECOND (wrapped in try/except so it doesn't crash the API)
+        try:
+            notify(
+                user=emp.user,
+                type=Notification.TYPE_PAYSLIP_GENERATED,
+                title="New Payslip Available",
+                message=(
+                    f"Your payslip for {payslip.month}/{payslip.year} is ready. "
+                    f"Net salary: ${payslip.net_salary}."
+                ),
+                link="/payslips",
+            )
+        except Exception as e:
+            print(f"Notification failed: {e}")
+
+        # 3. Return the Response
         return Response(
             PayslipSerializer(payslip).data,
             status=status.HTTP_201_CREATED,
