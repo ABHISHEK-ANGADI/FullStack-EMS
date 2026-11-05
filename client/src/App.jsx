@@ -7,7 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Employees from "./pages/Employees";
 import Attendance from "./pages/Attendance";
 import Leave from "./pages/Leave";
-import PaySlips from "./pages/PaySlips";
+import PaySlips from "./pages/Payslips";
 import Settings from "./pages/Settings";
 import PrintPaySlip from './pages/PrintPayslip';
 import LoginForm from "./components/LoginForm";
