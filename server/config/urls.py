@@ -16,6 +16,7 @@ from leaves.views import LeaveViewSet, LeaveBalanceView
 from payroll.views import PayslipViewSet
 from dashboard.views import AdminDashboardView, EmployeeDashboardView
 from notifications.views import NotificationViewSet
+from ai_agent.views import AIChatView 
 
 router = DefaultRouter()
 router.register("departments", DepartmentViewSet, basename="department")
@@ -52,6 +53,9 @@ urlpatterns = [
 
     # App API
     path("api/", include(router.urls)),
+
+    # AI Agent
+    path("api/ai-agent/chat/", AIChatView.as_view(), name="ai-chat"),
 ]
 
 if settings.DEBUG:

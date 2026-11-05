@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "leaves",
     "payroll",
     "notifications",
+    "ai_agent",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

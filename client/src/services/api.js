@@ -248,3 +248,13 @@ export const markAllNotificationsRead = async () => {
   const { data } = await api.post("/notifications/read-all/");
   return data;
 };
+
+
+// ══════════════════════════════════════════════════════════════
+// AI AGENT
+// ══════════════════════════════════════════════════════════════
+
+export const chatWithAI = async (message, history) => {
+  const { data } = await api.post("/ai-agent/chat/", { message, history });
+  return data;
+};

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
+import AiChatWidget from '../components/AiChatWidget' // <-- Import this
 
 const Layout = () => {
   return (
@@ -11,6 +12,9 @@ const Layout = () => {
                 <Outlet />
             </div>
         </main>
+        
+        {/* Add the AI Widget here */}
+        <AiChatWidget />
     </div>
   )
 }
