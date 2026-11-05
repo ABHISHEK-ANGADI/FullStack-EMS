@@ -9,7 +9,7 @@ import Attendance from "./pages/Attendance";
 import Leave from "./pages/Leave";
 import PaySlips from "./pages/PaySlips";
 import Settings from "./pages/Settings";
-import PrintPaySlip from "./pages/PrintPaySlip";
+import PrintPaySlip from './pages/PrintPayslip';
 import LoginForm from "./components/LoginForm";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
